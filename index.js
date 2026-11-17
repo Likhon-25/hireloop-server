@@ -1,7 +1,7 @@
 import express from "express";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import cors from "cors";
-import 'dotenv/config'
+import "dotenv/config";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -26,9 +26,58 @@ export async function connectToMongoDB() {
   }
 }
 
-const connectedClient = await connectToMongoDB()
+const connectedClient = await connectToMongoDB();
+const database = connectedClient.db("hireloopdb");
+const users = database.collection("user");
+const jobs = database.collection("jobs");
+
 app.get("/", (req, res) => {
   res.send("Hireloop is running");
+});
+
+// Users Api
+app.get("/users", async (req, res) => {
+  const cursor = users.find({});
+  const result = await cursor.toArray();
+  res.send(result);
+});
+
+// jobs releted apis
+app.post("/jobs", async (req, res) => {
+  const job = req.body;
+  const result = await jobs.insertOne(job);
+  res.send(result);
+});
+
+app.get("/jobs", async (req, res) => {
+  const cursor = jobs.find();
+  const result = await cursor.toArray();
+  res.send(result);
+});
+
+app.delete("/jobs/:id", async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) };
+  const result = await jobs.deleteOne(query);
+  res.send(result);
+});
+
+app.get("/jobs/:id", async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) };
+  const result = await jobs.findOne(query);
+  res.send(result);
+});
+
+app.patch("/jobs/:id", async (req, res) => {
+  const id = req.params.id;
+  const updatedJob = req.body;
+  const query = { _id: new ObjectId(id) };
+  const update = {
+    $set: updatedJob,
+  };
+  const result = await jobs.updateOne(query, update);
+  res.send(result);
 });
 
 app.listen(PORT, () => {
