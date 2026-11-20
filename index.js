@@ -36,10 +36,44 @@ app.get("/", (req, res) => {
 });
 
 // Users Api
-app.get("/users", async (req, res) => {
-  const cursor = users.find({});
-  const result = await cursor.toArray();
-  res.send(result);
+// Jobs Api (Filtering + Searching)
+app.get("/jobs", async (req, res) => {
+  try {
+    const query = {};
+
+    // Job Type Filter
+    if (req.query.type) {
+      query.type = req.query.type;
+    }
+
+    // Remote Filter
+    if (req.query.isRemote !== undefined) {
+      query.isRemote = req.query.isRemote === "true";
+    }
+    
+     // 2. Category Filter
+    if (req.query.category) {
+      query.category = req.query.category;
+    }
+
+    // Search Filter (title, description, qualifications)
+    if (req.query.search) {
+      query.$or = [
+        { title: { $regex: req.query.search, $options: "i" } },
+        { company: { $regex: req.query.search, $options: "i" } },
+        { description: { $regex: req.query.search, $options: "i" } },
+        { qualifications: { $regex: req.query.search, $options: "i" } },
+      ];
+    }
+
+    const cursor = jobs.find(query);
+    const result = await cursor.toArray();
+
+    res.send(result);
+  } catch (error) {
+    console.error("Error fetching jobs:", error);
+    res.status(500).send({ message: "Failed to fetch jobs" });
+  }
 });
 
 // jobs releted apis
